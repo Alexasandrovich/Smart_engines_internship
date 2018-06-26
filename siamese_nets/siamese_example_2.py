@@ -59,13 +59,13 @@ def embedder(data, suffix=''):
     return emb
 
 
-im_1 = cv2.imread('/media/user/COMMON/lobanov/data/a7.#.rec.notrash/3.4/00002118.png')
+im_1 = cv2.imread('/home/alex/image1.png')
 im_tr_1 = transform(im_1)
-im_tr_1 = mx.nd.array(im_tr_1, mx.gpu(0))
+im_tr_1 = mx.nd.array(im_tr_1, mx.сpu(0))
 
-im_2 = cv2.imread('/media/user/COMMON/lobanov/data/a7.#.rec.notrash/3.4/00041320.png')
+im_2 = cv2.imread('/home/alex/image1.png')
 im_tr_2 = transform(im_2)
-im_tr_2 = mx.nd.array(im_tr_2, mx.gpu(0))
+im_tr_2 = mx.nd.array(im_tr_2, mx.сpu(0))
 
 
 d1 = mxs.var('data_a')
@@ -75,7 +75,7 @@ emb1_arguments = emb1.list_arguments()
 emb1_arguments.pop(0)
 emb1_auxiliary = emb1.list_auxiliary_states()
 
-mod = mx.module.Module(emb1, ['data_a'], context=[mx.gpu(0)])
+mod = mx.module.Module(emb1, ['data_a'], context=[mx.сpu(0)])
 mod.bind([('data_a', (1, 3, 32, 32))])
 mod.init_params()
 arg_params, aux_params = mod.get_params()
@@ -90,18 +90,18 @@ emb2_auxiliary = emb2.list_auxiliary_states()
 
 shared_buffer = {}
 for i, name in enumerate(emb1_arguments):
-    shared_buffer[emb1_arguments[i]] = arg_params[name].as_in_context(mx.gpu(0))
-    shared_buffer[emb2_arguments[i]] = arg_params[name].as_in_context(mx.gpu(0))
+    shared_buffer[emb1_arguments[i]] = arg_params[name].as_in_context(mx.сpu(0))
+    shared_buffer[emb2_arguments[i]] = arg_params[name].as_in_context(mx.сpu(0))
 
 for i, name in enumerate(emb1_auxiliary):
-    shared_buffer[emb1_auxiliary[i]] = aux_params[name].as_in_context(mx.gpu(0))
-    shared_buffer[emb2_auxiliary[i]] = aux_params[name].as_in_context(mx.gpu(0))
+    shared_buffer[emb1_auxiliary[i]] = aux_params[name].as_in_context(mx.cpu(0))
+    shared_buffer[emb2_auxiliary[i]] = aux_params[name].as_in_context(mx.cpu(0))
 
 
 distance = mxs.sqrt(mxs.sum(mxs.pow(emb1 - emb2, 2), axis=1))
 infer_shape(distance, data_a=(1, 3, 32, 32), data_b=(1, 3, 32, 32), data=None)
 
-siamese_exe = distance.simple_bind(mx.gpu(0), data_a=(1, 3, 32, 32), data_b=(1, 3, 32, 32), shared_buffer=shared_buffer)
+siamese_exe = distance.simple_bind(mx.cpu(0), data_a=(1, 3, 32, 32), data_b=(1, 3, 32, 32), shared_buffer=shared_buffer)
 distance_out = siamese_exe.forward(False, data_a=im_tr_1, data_b=im_tr_2)
 print(distance_out)
 
